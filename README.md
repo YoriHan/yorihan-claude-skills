@@ -25,7 +25,7 @@ curl -o ~/.claude/commands/<skill-name>.md \
 | `/kol-linkedin` | Helio KOL LinkedIn 素材库内容生成 |
 | `/linkedin` | LinkedIn 功能发布帖创作 |
 | `/notion-update` | Notion 文档批量数据更新 |
-| `/minutes` | 会议整理助手：自动识别团队会议/用户访谈，输出主题摘要+人员 Todo，或访谈纲要+研发速查（支持飞书妙记/腾讯会议） |
+| `/meeting-digest` | 会议摘要助手：自动识别团队会议/用户访谈，输出主题摘要+人员 Todo，或访谈纲要+研发速查（支持飞书妙记/腾讯会议） |
 | `/wells` | Wells 计划审核导航 |
 | `/o` | 将对话总结存入克克笔记本（Karpathy Wiki 模式） |
 | `/user` | 整理用户访谈记录并上传 GitHub |
