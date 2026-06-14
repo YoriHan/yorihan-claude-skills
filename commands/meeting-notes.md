@@ -2,14 +2,19 @@
 
 输入：$ARGUMENTS（飞书妙记 URL、腾讯会议链接，或逐字稿文本）
 
+> **前置依赖**
+> - 飞书妙记：需安装 `lark-cli` 并完成飞书授权
+> - GitHub 上传：需安装 `gh` 并完成 GitHub 授权（`gh auth login`）
+> - 腾讯会议链接：需安装 gstack browse 工具，或直接粘贴逐字稿文本
+
 ---
 
 ## 两种模式
 
 | 模式 | 触发条件 | 输出 |
 |------|---------|------|
-| A：团队会议 | 参会人全是团队成员，议题是产品/运营/复盘等 | 主题分区摘要 + 人员 Todo 分配 + 可选执行行动项 |
-| B：用户访谈 | 标题/内容含"用户访谈"，或有明显外部参与者 | 访谈纲要（上传 GitHub）+ 研发速查 |
+| A：团队会议 | 参会人全是团队成员，议题是产品/运营/复盘等 | 主题分区摘要 + 人员 Todo 分配 + 待决策事项 |
+| B：用户访谈 | 标题/内容含"用户访谈"，或有明显外部参与者 | 访谈纲要（可选上传 GitHub）+ 研发速查 |
 
 无法判断时，询问用户："这是团队会议还是用户访谈？"
 
@@ -85,10 +90,9 @@ $B text 2>&1 | tail -500
 AI 转录经常把同一个名字/产品写出多种形式。扫描全文，找出所有变体，统一为一个标准写法后继续：
 
 常见变体类型：
-- 人名（"Yori"/"约力"/"约里"）
-- 产品名（"Helio"/"黑流"/"Heilio"）
-- 公司名缩写（"YT"/"YouTube"/"油管"）
-- 英文 + 中文混用同一概念（"KOL"/"博主"/"达人"）
+- 人名（同一个人被写成英文名、中文名、拼音缩写等不同形式）
+- 产品名（拼写错误、中英混用）
+- 公司/品牌缩写（中英文混用同一概念）
 
 统一后全文使用标准写法，不再使用变体。
 
@@ -124,7 +128,7 @@ PREFLIGHT 完成后，进入对应模式的整理步骤。
 - [待定/需跟进的事项（标明谁在跟进）]
 ```
 
-议题名跟随会议实际内容（如"产品改进"、"运营 & Campaign"、"用户研究"、"Launch 计划"），不要强行合并不同话题。
+议题名跟随会议实际内容，不要强行合并不同话题。
 
 ### 2A-2：人员 Todo 分配
 
@@ -152,7 +156,7 @@ PREFLIGHT 完成后，进入对应模式的整理步骤。
 ```
 
 **铁律：**
-- Todo 要具体到可以直接行动。"拉 KOL list"不够，"拉 Twitter KOL list，筛选发过 Cursor/Claude Code 内容的博主，周五出第一版"才对
+- Todo 要具体到可以直接行动，不能只写方向性描述
 - 截止时间如果会上提到了，必须写
 - 分歧未定的写"待确认"，不要硬造结论
 
@@ -179,21 +183,31 @@ PREFLIGHT 完成后，进入对应模式的整理步骤。
 1. [指令内容] — 方案：[Agent 打算怎么执行]
 ```
 
-### 2A-4：展示并确认执行
+### 2A-5：展示并确认执行
 
 输出以上内容后，列出所有**可执行**的行动项编号，问用户：
 > "需要我帮你执行哪些？直接说编号就行，比如"1 3 你来做"或"全部你来做"。"
 
 执行工具：
-- **约会议**：`lark-cli calendar +suggestion → +create`
-- **写文档**：`lark-cli docs +create`
-- **查文档/信息**：`lark-cli docs +search` 或 `WebSearch/WebFetch`
+- **约会议**：`lark-cli calendar +suggestion → +create`（飞书用户）
+- **写文档**：`lark-cli docs +create`（飞书用户）
+- **查文档/信息**：`WebSearch` 或 `WebFetch`
 - **发消息**：起草内容，用 pbcopy 复制到剪贴板，告知在哪个群粘贴（不代替用户发送）
-- **创建任务**：`lark-cli task` 相关命令
 
 ---
 
 ## 第二步（模式 B）：用户访谈整理
+
+### 2B-0：首次配置（仅第一次运行时）
+
+检查 memory 中是否已有以下配置，没有则逐一询问并记录（后续不再重复询问）：
+
+1. **产品名**：你的产品叫什么？（用于文件名和模板标题）
+2. **GitHub 上传**：访谈纲要要上传到 GitHub 吗？
+   - 如果是：GitHub repo 路径是什么？（格式：`owner/repo`）目标目录？（如 `docs/interviews`）
+   - 如果否：仅在对话中展示，不上传
+
+配置存入 memory，key 为 `meeting_notes_config`。
 
 ### 2B-1：确认受访者标识
 
@@ -202,10 +216,12 @@ PREFLIGHT 完成后，进入对应模式的整理步骤。
 
 其他信息从逐字稿里提取，不主动问。
 
-### 2B-2：确定文件编号
+### 2B-2：确定文件编号（仅当配置了 GitHub 上传时）
 
 ```bash
-gh api repos/sheet0/gtm/contents/Launch/user%20interview 2>/dev/null \
+REPO="[memory中的repo]"
+DIR="[memory中的目录]"
+gh api repos/$REPO/contents/$DIR 2>/dev/null \
   | python3 -c "
 import json, sys, re
 try:
@@ -220,29 +236,22 @@ except:
 "
 ```
 
+如果未配置 GitHub 上传，编号从 1 开始自增（仅用于文件名）。
+
 ### 2B-3：生成访谈纲要
 
 逐字稿原话 > AI 纪要。每个重要结论必须有原话引用（`> 「...」`）。
 
 ```markdown
-# NN-Helio用户访谈-[受访者标识]
+# NN-[产品名]用户访谈-[受访者标识]
 
-**受访者**：[标识] ｜ **身份**：[职业/行业] ｜ **参与者**：[Helio团队成员] ｜ **时长**：约 XX 分钟 ｜ **日期**：YYYY-MM-DD
-
----
-
-## 用户背景
-
-[3-4 段自然段。身份+团队规模+核心工作场景（越具体越好）。AI 工具迁移路径：[工具A]（为什么离开）→ [工具B]（为什么离开）→ Helio（原因）。来 Helio 的核心动机：① ... ② ... ③ ... 内测时长和活跃频率。]
+**受访者**：[标识] ｜ **身份**：[职业/行业] ｜ **参与者**：[团队成员] ｜ **时长**：约 XX 分钟 ｜ **日期**：YYYY-MM-DD
 
 ---
 
-## AI 工具全景
+## 受访者背景
 
-| 工具 | 使用场景 | 是否付费 | 备注/评价 |
-|------|---------|---------|----------|
-| [工具] | [场景] | [费用] | [用户原话评价] |
-| Helio | [整合了哪些需求] | 内测 | [来 Helio 的核心价值] |
+[3-4 段自然段。职业背景、团队规模、核心工作场景（越具体越好）。使用产品的时长和活跃程度。来使用这个产品的核心动机。]
 
 ---
 
@@ -250,10 +259,10 @@ except:
 
 ### 场景一：[名称]
 
-**配置方式**：[用了什么 Skill？自己写 prompt？从哪里引入的？]
-**触发时机**：[什么情况下用这个场景？]
+**使用方式**：[怎么用的？哪些功能？]
+**触发时机**：[什么情况下用？]
 **具体产出**：[做出来了什么？效果如何？]
-**与竞品对比**：[用户怎么评价 vs 竞品，尽量用原话]
+**与其他工具对比**：[用户怎么评价 vs 其他工具，尽量用原话]
 
 > 「[用户关键原话]」
 
@@ -269,17 +278,15 @@ except:
 
 **最大卡点**：[让用户最不爽的体验+原话]
 
-**[重要功能]未使用的真实原因**：[如果用户没用 Channel/Memory 等，找到真实前置条件，不要只写"未探索"]
-
 > 「[原话]」
 
 ---
 
-## 产品定位认知
+## 产品认知
 
-[用户怎么定位 Helio？与其他工具是替代还是互补？引用原话]
+[用户怎么定位这个产品？与其他工具是替代还是互补？引用原话]
 
-> 「[关键定位原话]」
+> 「[关键原话]」
 
 ---
 
@@ -296,7 +303,7 @@ except:
 ## 付费意愿
 
 - **当前付费现状**：[为哪些工具付费+金额]
-- **Helio 付费价位**：[具体数字+货币单位]
+- **[产品名] 付费价位**：[具体数字+货币单位]
 - **付费前提**：[什么条件才愿意付费]
 
 > 「[付费相关原话]」
@@ -304,13 +311,13 @@ except:
 
 **整理铁律：**
 1. 每个重要结论必须有逐字稿原话支撑，用 `> 「...」` 引用
-2. 场景要写清楚配置方式、触发时机、产出、竞品对比
+2. 场景要写清楚使用方式、触发时机、产出、竞品对比
 3. 未使用功能写真实原因，不能只写"未探索"，要找前置条件
 4. 竞品点名道姓，不模糊化
 5. 付费意愿要有数字，缺失的标注"（访谈未覆盖）"
 6. 不编造内容
 
-### 2B-4：生成研发速查（核心新增）
+### 2B-4：生成研发速查
 
 这是专门给研发看的 2 分钟速览，痛点直接映射到可执行改动。整体控制在 30-40 行以内。
 
@@ -363,66 +370,41 @@ except:
 - 功能需求必须说场景，不能只写功能名称
 - 整体控制在 1 屏以内，研发不需要读纲要就能 get 核心
 
-### 2B-5：上传访谈纲要到 GitHub
-
-先检查 `user interview` 是文件还是目录：
+### 2B-5：上传访谈纲要到 GitHub（仅当配置了上传时）
 
 ```bash
-TYPE=$(gh api repos/sheet0/gtm/contents/Launch/user%20interview 2>&1 | python3 -c "
-import json, sys
-try:
-    d = json.load(sys.stdin)
-    if isinstance(d, dict) and d.get('type') == 'file':
-        print('FILE:' + d['sha'])
-    elif isinstance(d, list):
-        print('DIR')
-    else:
-        print('NOT_FOUND')
-except:
-    print('ERROR')
-")
-```
+REPO="[memory中的repo]"
+DIR="[memory中的目录]"
+FILENAME="NN-[产品名]用户访谈-[受访者标识].md"
+ENC=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$FILENAME'))")
 
-如果是占位文件，先删除：
-
-```bash
-SHA=$(echo "$TYPE" | sed 's/FILE://')
-gh api repos/sheet0/gtm/contents/Launch/user%20interview \
-  --method DELETE \
-  --field message="chore: remove placeholder, replace with directory" \
-  --field sha="$SHA"
-```
-
-上传访谈纲要（研发速查不单独上传，只展示在对话中）：
-
-```bash
-# 先写入临时文件
+# 写入临时文件
 cat > /tmp/interview_draft.md << 'HEREDOC'
 [访谈纲要内容，不含研发速查]
 HEREDOC
 
-FILENAME="NN-Helio用户访谈-[受访者标识].md"
-ENC=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$FILENAME'))")
 CONTENT=$(base64 < /tmp/interview_draft.md)
 
-EXISTING=$(gh api repos/sheet0/gtm/contents/Launch/user%20interview/$ENC 2>/dev/null \
+EXISTING=$(gh api repos/$REPO/contents/$DIR/$ENC 2>/dev/null \
   | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('sha',''))" 2>/dev/null || echo "")
 
 if [ -n "$EXISTING" ]; then
-  gh api repos/sheet0/gtm/contents/Launch/user%20interview/$ENC \
+  gh api repos/$REPO/contents/$DIR/$ENC \
     --method PUT --field message="feat: update $FILENAME" \
     --field "content=$CONTENT" --field encoding="base64" --field sha="$EXISTING"
 else
-  gh api repos/sheet0/gtm/contents/Launch/user%20interview/$ENC \
+  gh api repos/$REPO/contents/$DIR/$ENC \
     --method PUT --field message="feat: add $FILENAME" \
     --field "content=$CONTENT" --field encoding="base64"
 fi
 ```
 
+如果未配置上传，跳过此步骤。
+
 ### 2B-6：输出结果
 
 完成后输出：
-1. GitHub 文件直链
+1. GitHub 文件直链（如果上传了）
 2. **完整研发速查**（直接展示在对话中，方便复制进研发群）
 3. 3 条核心 insight（聚焦场景和产品决策）
 
@@ -435,8 +417,10 @@ fi
 
 | 错误 | 处理 |
 |------|------|
+| 飞书未授权 | 提示运行 `lark-cli auth login` |
 | 页面需要登录 | 提示用户粘贴逐字稿文本 |
 | 转录内容不完整 | 整理已有内容，空白部分标注"（访谈未覆盖）" |
+| GitHub 未授权 | 提示运行 `gh auth login`，或跳过上传直接输出 Markdown |
 | GitHub API 失败 | 把 Markdown 输出在对话框，让用户手动上传 |
 | 文件名冲突 | 自动递增编号 |
 | 无法判断会议类型 | 询问用户 |
