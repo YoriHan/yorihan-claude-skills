@@ -1,20 +1,28 @@
 # yorihan-claude-skills
 
-## 在 Helio 安装
+## 在 Helio 安装（推荐）
 
-Helio 是按 repo 里的 `SKILL.md` 文件来装 skill 的（`commands/*.md` 是 Claude Code slash command，Helio 不识别）。目前已转成 Helio skill 格式的是 **meeting-notes**：
+Helio 是按 repo 里的 `SKILL.md` 文件来装 skill 的（`commands/*.md` 是 Claude Code slash command，Helio 不识别）。本仓库全部 10 个功能现在都有 `<名字>/SKILL.md`，直接粘仓库链接即可一次装全：
 
 ```
-https://github.com/YoriHan/yorihan-claude-skills/tree/main/meeting-notes
+https://github.com/YoriHan/yorihan-claude-skills
 ```
 
 或命令行：
 
 ```bash
+heliox skill install YoriHan/yorihan-claude-skills --description "Yorihan 的 KOL / 内容 / 会议 / 知识管理 skill 合集"
+```
+
+单独装某一个，用 `--path`：
+
+```bash
 heliox skill install YoriHan/yorihan-claude-skills --path meeting-notes --description "会议/访谈纪要整理"
 ```
 
-> 其余命令（kol-* / linkedin / notion-update / o / user / wells）目前仍是 Claude Code slash command 格式，要在 Helio 里用需要同样补一个 `<名字>/SKILL.md`——需要的话告诉我，我按同样方式转。
+> 已转好的 skill：`kol-eval` `kol-linkedin` `kol-linkedin-import` `kol-plan` `linkedin` `meeting-notes` `notion-update` `o` `user` `wells`。
+> 两点注意：① `o`(克克笔记本) 的笔记本根目录已改成可配置，本地想固定到原来的 Mac 路径，在 `~/.claude/keke-notebook/config.json` 写 `{"notebook_root": "/Users/yorihan/Documents/克克笔记本"}`；② `user` 依赖单独的 `user-interview` skill，要么把那个也装上，要么直接用 `meeting-notes`(它的访谈模式等价)。
+> 原 `commands/*.md` 都保留，Claude Code 照样能用。
 
 ---
 
