@@ -11,7 +11,7 @@ skills=(
   "kol-linkedin"
   "linkedin"
   "notion-update"
-  "minutes"
+  "meeting-notes"
   "wells"
   "o"
   "user"
