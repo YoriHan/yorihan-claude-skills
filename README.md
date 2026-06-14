@@ -1,5 +1,23 @@
 # yorihan-claude-skills
 
+## 在 Helio 安装
+
+Helio 是按 repo 里的 `SKILL.md` 文件来装 skill 的（`commands/*.md` 是 Claude Code slash command，Helio 不识别）。目前已转成 Helio skill 格式的是 **meeting-notes**：
+
+```
+https://github.com/YoriHan/yorihan-claude-skills/tree/main/meeting-notes
+```
+
+或命令行：
+
+```bash
+heliox skill install YoriHan/yorihan-claude-skills --path meeting-notes --description "会议/访谈纪要整理"
+```
+
+> 其余命令（kol-* / linkedin / notion-update / o / user / wells）目前仍是 Claude Code slash command 格式，要在 Helio 里用需要同样补一个 `<名字>/SKILL.md`——需要的话告诉我，我按同样方式转。
+
+---
+
 Yorihan 的 Claude Code 个人 skill 合集，覆盖 KOL 运营、内容创作、会议整理、知识管理等场景。
 
 ## 快速安装
